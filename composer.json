@@ -1,0 +1,17 @@
+{
+    "name": "rindow/phpvenv",
+    "description": "A lightweight virtual environment manager for PHP.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "yuichiis"
+        }
+    ],
+    "require": {
+        "php": ">=8.1"
+    },
+    "bin": [
+        "bin/phpvenv"
+    ]
+}
