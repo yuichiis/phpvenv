@@ -84,4 +84,6 @@ The environment does not bundle PHP itself.
 Instead, it creates wrapper scripts that forward execution to the PHP binary used at environment creation time.
 
 ## License
-MIT
+[BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)
+
+##)
