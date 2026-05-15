@@ -17,7 +17,7 @@ It allows you to create a local environment with its own configuration (`php.ini
 You can install this tool globally using Composer:
 
 ```bash
-composer global require yuichiis/phpvenv
+composer global require rindow/phpvenv
 ```
 
 Ensure your global composer bin directory is in your `PATH`.
