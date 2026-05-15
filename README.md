@@ -86,4 +86,3 @@ Instead, it creates wrapper scripts that forward execution to the PHP binary use
 ## License
 [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)
 
-##)
