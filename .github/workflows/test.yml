@@ -34,9 +34,19 @@ jobs:
     - name: Run test suite
       run: vendor/bin/phpunit -c tests
 
-    - name: Run test windows command
+    - name: Run test powershell command
       if: ${{ startsWith(matrix.os, 'windows-') }}
       run: |
-        php bin/phpvenv venv
-        venv/Scripts/Activate.ps1
+        php bin/phpvenv venv-ps
+        venv-ps/Scripts/Activate.ps1
         php --ini
+        deactivate
+
+    - name: Run test cmd command
+      if: ${{ startsWith(matrix.os, 'windows-') }}
+      shell: cmd
+      run: |
+        php bin/phpvenv venv-cmd
+        venv-cmd/Scripts/activate.bat
+        php --ini
+        deactivate
