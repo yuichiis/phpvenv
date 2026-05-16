@@ -196,9 +196,14 @@ SH;
     {
         return <<<BAT
 @echo off
-if "%~1"=="--ini" ( shift )
-if "%~0"=="--ini" ( "{$phpBinary}" --ini -c "{$cliDir}" %1 %2 %3 %4 %5 %6 %7 %8 %9 )
-else ( "{$phpBinary}" -c "{$cliDir}" %* )
+if "%~1"=="--ini" (
+    shift
+)
+if "%~0"=="--ini" (
+    "{$phpBinary}" --ini -c "{$cliDir}" %1 %2 %3 %4 %5 %6 %7 %8 %9
+) else (
+    "{$phpBinary}" -c "{$cliDir}" %*
+)
 BAT;
     }
 
