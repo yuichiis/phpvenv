@@ -37,6 +37,6 @@ jobs:
     - name: Run test windows command
       if: ${{ startsWith(matrix.os, 'windows-') }}
       run: |
-        bin/phpvenv venv
-        venv/Scripts/activate.bat
+        php bin/phpvenv venv
+        venv/Scripts/Activate.ps1
         php --ini
