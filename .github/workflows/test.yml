@@ -34,3 +34,9 @@ jobs:
     - name: Run test suite
       run: vendor/bin/phpunit -c tests
 
+    - name: Run test windows command
+      if: ${{ startsWith(matrix.os, 'windows-') }}
+      run: |
+        bin/phpvenv venv
+        venv/Scripts/activate.bat
+        php --ini
