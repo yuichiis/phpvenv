@@ -38,7 +38,7 @@ jobs:
       if: ${{ startsWith(matrix.os, 'windows-') }}
       run: |
         php bin/phpvenv venv-ps
-        venv-ps/Scripts/Activate.ps1
+        . venv-ps/Scripts/Activate.ps1
         php --ini
         deactivate
 
@@ -47,6 +47,6 @@ jobs:
       shell: cmd
       run: |
         php bin/phpvenv venv-cmd
-        venv-cmd/Scripts/activate.bat
+        call venv-cmd/Scripts/activate.bat
         php --ini
-        deactivate
+
