@@ -21,6 +21,6 @@
         "bin/phpvenv"
     ],
     "require-dev": {
-        "phpunit/phpunit": "^13.1"
+        "phpunit/phpunit": "^12.5"
     }
 }
