@@ -100,8 +100,8 @@ class EnvironmentCreator
     {
         echo "\nActivate:\n";
         if ($this->isWindows) {
-            echo "  {$envDir}\\Scripts\\activate.bat\n";
-            echo "  powershell -ExecutionPolicy Bypass -File {$envDir}\\Scripts\\Activate.ps1\n";
+            echo "  {$envDir}\\Scripts\\activate.bat (cmd)\n";
+            echo "  . {$envDir}\\Scripts\\Activate.ps1 (powershell)\n";
         } else {
             echo "  source {$envDir}/bin/activate\n";
         }
