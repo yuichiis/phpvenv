@@ -58,3 +58,11 @@ jobs:
         call venv-cmd/Scripts/activate.bat
         php --ini
 
+    - name: Run test macos command
+      if: ${{ startsWith(matrix.os, 'macos-') }}
+      run: |
+        php bin/phpvenv venv-macos
+        . venv-macos/bin/activate
+        php --ini
+        deactivate
+
