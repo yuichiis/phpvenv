@@ -7,11 +7,17 @@ $paths = [
     __DIR__.'/../../../autoload.php',
     __DIR__.'/../vendor/autoload.php',
 ];
+$autoloader = null;
 foreach($paths as $path) {
     if(file_exists($path)) {
-        include_once $path;
+        $autoloader = $path;
         break;
     }
+}
+if($autoloader) {
+    require_once $autoloader;
+} else {
+    require_once __DIR__.'/../src/loader.php';
 }
 
 
