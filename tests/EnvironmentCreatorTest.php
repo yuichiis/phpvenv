@@ -71,6 +71,15 @@ class EnvironmentCreatorTest extends TestCase
         $this->assertFileExists($envDir . '/bin/activate');
         $this->assertFileExists($envDir . '/bin/php');
         
+        $phpContent = file_get_contents($envDir . '/bin/php');
+        $this->assertStringContainsString('export VIRTUAL_ENV=', $phpContent);
+        $this->assertStringContainsString('export PHP_INI_SCAN_DIR=', $phpContent);
+        $this->assertStringContainsString('export COMPOSER_HOME=', $phpContent);
+
+        $binDir = $envDir . DIRECTORY_SEPARATOR . 'bin';
+        $activateContent = file_get_contents($binDir . '/activate');
+        $this->assertStringContainsString("export PATH=\"{$binDir}:", $activateContent);
+
         $this->assertStringContainsString('Activate:', $output);
     }
 
@@ -84,21 +93,38 @@ class EnvironmentCreatorTest extends TestCase
         $output = ob_get_clean();
 
         $envDir = $this->tempDir . DIRECTORY_SEPARATOR . $envName;
+        $binDir = $envDir . DIRECTORY_SEPARATOR . 'Scripts';
         
         $this->assertDirectoryExists($envDir);
-        $this->assertDirectoryExists($envDir . DIRECTORY_SEPARATOR . 'Scripts');
+        $this->assertDirectoryExists($binDir);
         $this->assertDirectoryExists($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'conf.d');
         
         // Scripts
-        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'activate.bat');
-        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'deactivate.bat');
-        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'php.bat');
-        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'Activate.ps1');
-        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'php.ps1');
+        $this->assertFileExists($binDir . DIRECTORY_SEPARATOR . 'activate.bat');
+        $this->assertFileExists($binDir . DIRECTORY_SEPARATOR . 'deactivate.bat');
+        $this->assertFileExists($binDir . DIRECTORY_SEPARATOR . 'php.bat');
+        $this->assertFileExists($binDir . DIRECTORY_SEPARATOR . 'Activate.ps1');
+        $this->assertFileExists($binDir . DIRECTORY_SEPARATOR . 'php.ps1');
         
         // Bash should also be generated for mingw/wsl on windows
-        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'activate');
+        $this->assertFileExists($binDir . DIRECTORY_SEPARATOR . 'activate');
         
+        $phpPs1 = file_get_contents($binDir . DIRECTORY_SEPARATOR . 'php.ps1');
+        $this->assertStringContainsString('$env:VIRTUAL_ENV =', $phpPs1);
+        $this->assertStringContainsString('$env:PHP_INI_SCAN_DIR =', $phpPs1);
+        $this->assertStringContainsString('$env:COMPOSER_HOME =', $phpPs1);
+
+        $phpBat = file_get_contents($binDir . DIRECTORY_SEPARATOR . 'php.bat');
+        $this->assertStringContainsString('set "VIRTUAL_ENV=', $phpBat);
+        $this->assertStringContainsString('set "PHP_INI_SCAN_DIR=', $phpBat);
+        $this->assertStringContainsString('set "COMPOSER_HOME=', $phpBat);
+
+        $activatePs1 = file_get_contents($binDir . DIRECTORY_SEPARATOR . 'Activate.ps1');
+        $this->assertStringContainsString("\$env:PATH = \"{$binDir};", $activatePs1);
+
+        $activateBat = file_get_contents($binDir . DIRECTORY_SEPARATOR . 'activate.bat');
+        $this->assertStringContainsString("set \"PATH={$binDir};", $activateBat);
+
         $this->assertStringContainsString('Activate:', $output);
     }
 }

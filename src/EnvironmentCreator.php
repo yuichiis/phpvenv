@@ -70,16 +70,16 @@ class EnvironmentCreator
         // Windows Batch scripts
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'activate.bat', $this->getActivateBat($envName, $envDir, $binDir, $confDDir));
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'deactivate.bat', $this->getDeactivateBat());
-        $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'php.bat', $this->getPhpBat($phpBinary, $cliDir));
+        $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'php.bat', $this->getPhpBat($phpBinary, $envDir, $cliDir, $confDDir));
 
         // PowerShell
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'Activate.ps1', $this->getActivatePs1($envName, $envDir, $binDir, $confDDir));
-        $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'php.ps1', $this->getPhpPs1($phpBinary, $cliDir));
+        $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'php.ps1', $this->getPhpPs1($phpBinary, $envDir, $cliDir, $confDDir));
 
         // Bash
         $this->writeUnixFile($binDir . DIRECTORY_SEPARATOR . 'activate', $this->getActivateSh($envName, $envDir, $binDir, $confDDir));
         if (!$this->isWindows) {
-            $this->writeUnixFile($binDir . DIRECTORY_SEPARATOR . 'php', $this->getPhpSh($phpBinary, $cliDir));
+            $this->writeUnixFile($binDir . DIRECTORY_SEPARATOR . 'php', $this->getPhpSh($phpBinary, $envDir, $cliDir, $confDDir));
         }
     }
 
@@ -116,7 +116,7 @@ set "_OLD_VIRTUAL_PATH=%PATH%"
 set "_OLD_PHP_INI_SCAN_DIR=%PHP_INI_SCAN_DIR%"
 set "_OLD_COMPOSER_HOME=%COMPOSER_HOME%"
 set "VIRTUAL_ENV={$envDir}"
-set "PATH=%VIRTUAL_ENV%\\composer\\vendor\\bin;{$binDir};%PATH%"
+set "PATH={$binDir};%VIRTUAL_ENV%\\composer\\vendor\\bin;%PATH%"
 set "PHP_INI_SCAN_DIR={$confDDir}"
 set "PROMPT=({$envName}) %PROMPT%"
 set "COMPOSER_HOME=%VIRTUAL_ENV%\composer"
@@ -149,7 +149,7 @@ BAT;
 if (Test-Path function:_OLD_VIRTUAL_PROMPT) { Remove-Item function:_OLD_VIRTUAL_PROMPT -ErrorAction SilentlyContinue }
 Copy-Item function:prompt function:_OLD_VIRTUAL_PROMPT
 \$env:VIRTUAL_ENV = "{$envDir}"
-\$env:PATH = "\$env:VIRTUAL_ENV\\composer\\vendor\\bin;{$binDir};" + \$env:PATH
+\$env:PATH = "{$binDir};\$env:VIRTUAL_ENV\\composer\\vendor\\bin;" + \$env:PATH
 \$env:PHP_INI_SCAN_DIR = "{$confDDir}"
 \$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
 function global:prompt { "({$envName}) " + (& _OLD_VIRTUAL_PROMPT) }
@@ -178,7 +178,7 @@ export _OLD_PHP_INI_SCAN_DIR="\$PHP_INI_SCAN_DIR"
 export _OLD_COMPOSER_HOME="\$COMPOSER_HOME"
 if [ -n "\$PS1" ]; then export _OLD_VIRTUAL_PS1="\$PS1"; export PS1="({$envName}) \$PS1"; fi
 export VIRTUAL_ENV="{$envDir}"
-export PATH="\$VIRTUAL_ENV/composer/vendor/bin:{$binDir}:\$PATH"
+export PATH="{$binDir}:\$VIRTUAL_ENV/composer/vendor/bin:\$PATH"
 export PHP_INI_SCAN_DIR="{$confDDir}"
 export COMPOSER_HOME="\$VIRTUAL_ENV/composer"
 deactivate () {
@@ -192,10 +192,14 @@ deactivate () {
 SH;
     }
 
-    private function getPhpBat(string $phpBinary, string $cliDir): string
+    private function getPhpBat(string $phpBinary, string $envDir, string $cliDir, string $confDDir): string
     {
         return <<<BAT
 @echo off
+setlocal
+set "VIRTUAL_ENV={$envDir}"
+set "PHP_INI_SCAN_DIR={$confDDir}"
+set "COMPOSER_HOME={$envDir}\composer"
 if "%~1"=="--ini" (
     shift
 )
@@ -207,18 +211,24 @@ if "%~0"=="--ini" (
 BAT;
     }
 
-    private function getPhpSh(string $phpBinary, string $cliDir): string
+    private function getPhpSh(string $phpBinary, string $envDir, string $cliDir, string $confDDir): string
     {
         return <<<SH
 #!/usr/bin/env bash
+export VIRTUAL_ENV="{$envDir}"
+export PHP_INI_SCAN_DIR="{$confDDir}"
+export COMPOSER_HOME="\$VIRTUAL_ENV/composer"
 if [ "$1" = "--ini" ]; then shift; exec "{$phpBinary}" --ini -c "{$cliDir}" "\$@";
 else exec "{$phpBinary}" -c "{$cliDir}" "\$@"; fi
 SH;
     }
 
-    private function getPhpPs1(string $phpBinary, string $cliDir): string
+    private function getPhpPs1(string $phpBinary, string $envDir, string $cliDir, string $confDDir): string
     {
         return <<<PS1
+\$env:VIRTUAL_ENV = "{$envDir}"
+\$env:PHP_INI_SCAN_DIR = "{$confDDir}"
+\$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
 if (\$args.Length -gt 0 -and \$args[0] -eq "--ini") {
     \$rest = @("--ini", "-c", "{$cliDir}")
     if (\$args.Length -gt 1) { \$rest += \$args[1..(\$args.Length - 1)] }
