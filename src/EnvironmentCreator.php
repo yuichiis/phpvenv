@@ -226,15 +226,24 @@ SH;
     private function getPhpPs1(string $phpBinary, string $envDir, string $cliDir, string $confDDir): string
     {
         return <<<PS1
-\$env:VIRTUAL_ENV = "{$envDir}"
-\$env:PHP_INI_SCAN_DIR = "{$confDDir}"
-\$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
-if (\$args.Length -gt 0 -and \$args[0] -eq "--ini") {
-    \$rest = @("--ini", "-c", "{$cliDir}")
-    if (\$args.Length -gt 1) { \$rest += \$args[1..(\$args.Length - 1)] }
-    & "{$phpBinary}" @rest
-} else {
-    & "{$phpBinary}" -c "{$cliDir}" @args
+\$oldVirtualEnv      = \$env:VIRTUAL_ENV
+\$oldPhpIniScanDir   = \$env:PHP_INI_SCAN_DIR
+\$oldComposerHome    = \$env:COMPOSER_HOME
+try {
+    \$env:VIRTUAL_ENV = "{$envDir}"
+    \$env:PHP_INI_SCAN_DIR = "{$confDDir}"
+    \$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
+    if (\$args.Length -gt 0 -and \$args[0] -eq "--ini") {
+        \$rest = @("--ini", "-c", "{$cliDir}")
+        if (\$args.Length -gt 1) { \$rest += \$args[1..(\$args.Length - 1)] }
+        & "{$phpBinary}" @rest
+    } else {
+        & "{$phpBinary}" -c "{$cliDir}" @args
+    }
+} finally {
+    if (\$oldVirtualEnv) { \$env:VIRTUAL_ENV = \$oldVirtualEnv } else { Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue }
+    if (\$oldPhpIniScanDir) { \$env:PHP_INI_SCAN_DIR = \$oldPhpIniScanDir } else { Remove-Item Env:PHP_INI_SCAN_DIR -ErrorAction SilentlyContinue }
+    if (\$oldComposerHome) { \$env:COMPOSER_HOME = \$oldComposerHome } else { Remove-Item Env:COMPOSER_HOME -ErrorAction SilentlyContinue }
 }
 PS1;
     }
