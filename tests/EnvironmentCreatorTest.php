@@ -75,6 +75,8 @@ class EnvironmentCreatorTest extends TestCase
         $this->assertStringContainsString('export VIRTUAL_ENV=', $phpContent);
         $this->assertStringContainsString('export PHP_INI_SCAN_DIR=', $phpContent);
         $this->assertStringContainsString('export COMPOSER_HOME=', $phpContent);
+        $this->assertStringContainsString('export PHPRC=', $phpContent);
+        $this->assertStringContainsString('artisan', $phpContent);
 
         $binDir = $envDir . DIRECTORY_SEPARATOR . 'bin';
         $activateContent = file_get_contents($binDir . '/activate');
@@ -118,6 +120,11 @@ class EnvironmentCreatorTest extends TestCase
         $this->assertStringContainsString('set "VIRTUAL_ENV=', $phpBat);
         $this->assertStringContainsString('set "PHP_INI_SCAN_DIR=', $phpBat);
         $this->assertStringContainsString('set "COMPOSER_HOME=', $phpBat);
+        $this->assertStringContainsString('set "PHPRC=', $phpBat);
+        $this->assertStringContainsString('artisan', $phpBat);
+
+        $this->assertStringContainsString('PHPRC', $phpPs1);
+        $this->assertStringContainsString('artisan', $phpPs1);
 
         $activatePs1 = file_get_contents($binDir . DIRECTORY_SEPARATOR . 'Activate.ps1');
         $this->assertStringContainsString("\$env:PATH = \"{$binDir};", $activatePs1);
@@ -126,5 +133,99 @@ class EnvironmentCreatorTest extends TestCase
         $this->assertStringContainsString("set \"PATH={$binDir};", $activateBat);
 
         $this->assertStringContainsString('Activate:', $output);
+    }
+
+    private function createFakeIniFiles(): array
+    {
+        $origDir = $this->tempDir . DIRECTORY_SEPARATOR . 'orig';
+        $confD = $origDir . DIRECTORY_SEPARATOR . 'conf.d';
+        mkdir($origDir, 0777, true);
+        mkdir($confD, 0777, true);
+        $mainIni = $origDir . DIRECTORY_SEPARATOR . 'php.ini';
+        $extraIni = $confD . DIRECTORY_SEPARATOR . 'extra.ini';
+        file_put_contents($mainIni, "memory_limit=111M\n");
+        file_put_contents($extraIni, "precision=21\n");
+        return [$origDir, $mainIni, $extraIni];
+    }
+
+    private function createCreatorWithFakeIni(?string $loaded, string $scanned, bool $isWindows): EnvironmentCreator
+    {
+        return new class ($this->fs, $isWindows, $loaded, $scanned) extends EnvironmentCreator {
+            public function __construct(Filesystem $fs, ?bool $isWindows, private ?string $fakeLoaded, private string $fakeScanned)
+            {
+                parent::__construct($fs, $isWindows);
+            }
+
+            protected function getLoadedIniFile(): string|false
+            {
+                return $this->fakeLoaded ?? false;
+            }
+
+            protected function getScannedIniFiles(): string|false
+            {
+                return $this->fakeScanned;
+            }
+        };
+    }
+
+    public function testScannedPhpIniIsPromotedWhenNoLoadedIni(): void
+    {
+        // scoop pattern: no loaded php.ini, main php.ini comes via scan dir
+        [$origDir, $mainIni, $extraIni] = $this->createFakeIniFiles();
+
+        $creator = $this->createCreatorWithFakeIni(null, $mainIni . ',' . $extraIni, true);
+
+        ob_start();
+        $creator->create('scoopenv', $this->tempDir);
+        ob_end_clean();
+
+        $envDir = $this->tempDir . DIRECTORY_SEPARATOR . 'scoopenv';
+        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'php.ini');
+        $this->assertStringContainsString(
+            'memory_limit=111M',
+            file_get_contents($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'php.ini')
+        );
+        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'conf.d' . DIRECTORY_SEPARATOR . 'extra.ini');
+        $this->assertFileDoesNotExist($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'conf.d' . DIRECTORY_SEPARATOR . 'php.ini');
+    }
+
+    public function testDuplicateScannedIniIsSkippedWhenSameAsLoaded(): void
+    {
+        [$origDir, $mainIni, $extraIni] = $this->createFakeIniFiles();
+
+        $creator = $this->createCreatorWithFakeIni($mainIni, $mainIni . ',' . $extraIni, true);
+
+        ob_start();
+        $creator->create('dupenv', $this->tempDir);
+        ob_end_clean();
+
+        $envDir = $this->tempDir . DIRECTORY_SEPARATOR . 'dupenv';
+        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'php.ini');
+        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'conf.d' . DIRECTORY_SEPARATOR . 'extra.ini');
+        $this->assertFileDoesNotExist($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'conf.d' . DIRECTORY_SEPARATOR . 'php.ini');
+    }
+
+    public function testDifferentlyLocatedScannedPhpIniIsKept(): void
+    {
+        [$origDir, $mainIni, $extraIni] = $this->createFakeIniFiles();
+        $otherDir = $this->tempDir . DIRECTORY_SEPARATOR . 'other';
+        mkdir($otherDir, 0777, true);
+        $otherPhpIni = $otherDir . DIRECTORY_SEPARATOR . 'php.ini';
+        file_put_contents($otherPhpIni, "memory_limit=222M\n");
+
+        $creator = $this->createCreatorWithFakeIni($mainIni, $otherPhpIni . ',' . $extraIni, true);
+
+        ob_start();
+        $creator->create('otherenv', $this->tempDir);
+        ob_end_clean();
+
+        $envDir = $this->tempDir . DIRECTORY_SEPARATOR . 'otherenv';
+        // Loaded file wins cli/php.ini; the differently located scanned php.ini
+        // is kept in conf.d to preserve override semantics.
+        $this->assertStringContainsString(
+            'memory_limit=111M',
+            file_get_contents($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'php.ini')
+        );
+        $this->assertFileExists($envDir . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'conf.d' . DIRECTORY_SEPARATOR . 'php.ini');
     }
 }

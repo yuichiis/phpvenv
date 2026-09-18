@@ -45,22 +45,62 @@ class EnvironmentCreator
 
     private function copyConfiguration(string $cliDir, string $confDDir): void
     {
-        $loadedIni = php_ini_loaded_file();
+        $loadedIni = $this->getLoadedIniFile();
+        $hasMainIni = false;
         if ($loadedIni && $this->fs->exists($loadedIni)) {
             $this->fs->copy($loadedIni, $cliDir . DIRECTORY_SEPARATOR . 'php.ini');
             echo "Copied php.ini\n";
+            $hasMainIni = true;
         }
 
-        $scanned = php_ini_scanned_files();
+        $scanned = $this->getScannedIniFiles();
         if ($scanned) {
             $files = array_map('trim', explode(',', $scanned));
+            $loadedReal = ($loadedIni && is_string($loadedIni)) ? realpath($loadedIni) : false;
             foreach ($files as $file) {
-                if ($file && $this->fs->exists($file)) {
-                    $this->fs->copy($file, $confDDir . DIRECTORY_SEPARATOR . basename($file));
+                if (!$file || !$this->fs->exists($file)) {
+                    continue;
                 }
+                // Same file as the loaded php.ini -> already copied as cli/php.ini
+                if ($loadedReal !== false) {
+                    $fileReal = realpath($file);
+                    if ($fileReal !== false && $this->isSamePath($fileReal, $loadedReal)) {
+                        continue;
+                    }
+                }
+                // No loaded php.ini (e.g. scoop installs have no php.ini next
+                // to php.exe but load it via PHP_INI_SCAN_DIR as one of the
+                // scanned files): promote a scanned "php.ini" to cli/php.ini
+                // so that -c/PHPRC point to a real main ini file like the
+                // other patterns.
+                if (!$hasMainIni && strtolower(basename($file)) === 'php.ini') {
+                    $this->fs->copy($file, $cliDir . DIRECTORY_SEPARATOR . 'php.ini');
+                    echo "Copied php.ini (from scan dir)\n";
+                    $hasMainIni = true;
+                    continue;
+                }
+                $this->fs->copy($file, $confDDir . DIRECTORY_SEPARATOR . basename($file));
             }
             echo "Copied additional ini files\n";
         }
+    }
+
+    protected function getLoadedIniFile(): string|false
+    {
+        return php_ini_loaded_file();
+    }
+
+    protected function getScannedIniFiles(): string|false
+    {
+        return php_ini_scanned_files();
+    }
+
+    private function isSamePath(string $a, string $b): bool
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            return strtolower($a) === strtolower($b);
+        }
+        return $a === $b;
     }
 
     private function generateScripts(string $envName, string $envDir, string $binDir, string $cliDir, string $confDDir): void
@@ -200,13 +240,15 @@ setlocal
 set "VIRTUAL_ENV={$envDir}"
 set "PHP_INI_SCAN_DIR={$confDDir}"
 set "COMPOSER_HOME={$envDir}\composer"
+set "PHPRC={$cliDir}"
 if "%~1"=="--ini" (
-    shift
-)
-if "%~0"=="--ini" (
-    "{$phpBinary}" --ini -c "{$cliDir}" %1 %2 %3 %4 %5 %6 %7 %8 %9
+    "{$phpBinary}" --ini -c "{$cliDir}" %2 %3 %4 %5 %6 %7 %8 %9
 ) else (
-    "{$phpBinary}" -c "{$cliDir}" %*
+    if /I "%~n1"=="artisan" (
+        "{$phpBinary}" %*
+    ) else (
+        "{$phpBinary}" -c "{$cliDir}" %*
+    )
 )
 BAT;
     }
@@ -218,8 +260,17 @@ BAT;
 export VIRTUAL_ENV="{$envDir}"
 export PHP_INI_SCAN_DIR="{$confDDir}"
 export COMPOSER_HOME="\$VIRTUAL_ENV/composer"
-if [ "$1" = "--ini" ]; then shift; exec "{$phpBinary}" --ini -c "{$cliDir}" "\$@";
-else exec "{$phpBinary}" -c "{$cliDir}" "\$@"; fi
+export PHPRC="{$cliDir}"
+if [ "\$1" = "--ini" ]; then shift; exec "{$phpBinary}" --ini -c "{$cliDir}" "\$@";
+else
+    _phpvenv_is_artisan=0
+    if [ -n "\$1" ]; then
+        _phpvenv_base=\$(basename "\$1")
+        _phpvenv_base=\${_phpvenv_base%.php}
+        if [ "\$_phpvenv_base" = "artisan" ]; then _phpvenv_is_artisan=1; fi
+    fi
+    if [ "\$_phpvenv_is_artisan" = "1" ]; then exec "{$phpBinary}" "\$@"; else exec "{$phpBinary}" -c "{$cliDir}" "\$@"; fi
+fi
 SH;
     }
 
@@ -229,14 +280,18 @@ SH;
 \$oldVirtualEnv      = \$env:VIRTUAL_ENV
 \$oldPhpIniScanDir   = \$env:PHP_INI_SCAN_DIR
 \$oldComposerHome    = \$env:COMPOSER_HOME
+\$oldPhprc           = \$env:PHPRC
 try {
     \$env:VIRTUAL_ENV = "{$envDir}"
     \$env:PHP_INI_SCAN_DIR = "{$confDDir}"
     \$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
+    \$env:PHPRC = "{$cliDir}"
     if (\$args.Length -gt 0 -and \$args[0] -eq "--ini") {
         \$rest = @("--ini", "-c", "{$cliDir}")
         if (\$args.Length -gt 1) { \$rest += \$args[1..(\$args.Length - 1)] }
         & "{$phpBinary}" @rest
+    } elseif (\$args.Length -gt 0 -and ([System.IO.Path]::GetFileNameWithoutExtension(\$args[0]) -ieq "artisan")) {
+        & "{$phpBinary}" @args
     } else {
         & "{$phpBinary}" -c "{$cliDir}" @args
     }
@@ -244,6 +299,7 @@ try {
     if (\$oldVirtualEnv) { \$env:VIRTUAL_ENV = \$oldVirtualEnv } else { Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue }
     if (\$oldPhpIniScanDir) { \$env:PHP_INI_SCAN_DIR = \$oldPhpIniScanDir } else { Remove-Item Env:PHP_INI_SCAN_DIR -ErrorAction SilentlyContinue }
     if (\$oldComposerHome) { \$env:COMPOSER_HOME = \$oldComposerHome } else { Remove-Item Env:COMPOSER_HOME -ErrorAction SilentlyContinue }
+    if (\$oldPhprc) { \$env:PHPRC = \$oldPhprc } else { Remove-Item Env:PHPRC -ErrorAction SilentlyContinue }
 }
 PS1;
     }
