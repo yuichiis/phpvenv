@@ -111,15 +111,18 @@ class EnvironmentCreator
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'activate.bat', $this->getActivateBat($envName, $envDir, $binDir, $confDDir));
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'deactivate.bat', $this->getDeactivateBat());
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'php.bat', $this->getPhpBat($phpBinary, $envDir, $cliDir, $confDDir));
+        $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'run.bat', $this->getRunBat($envDir, $binDir, $cliDir, $confDDir));
 
         // PowerShell
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'Activate.ps1', $this->getActivatePs1($envName, $envDir, $binDir, $confDDir));
         $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'php.ps1', $this->getPhpPs1($phpBinary, $envDir, $cliDir, $confDDir));
+        $this->writeWindowsFile($binDir . DIRECTORY_SEPARATOR . 'run.ps1', $this->getRunPs1($envDir, $binDir, $cliDir, $confDDir));
 
         // Bash
         $this->writeUnixFile($binDir . DIRECTORY_SEPARATOR . 'activate', $this->getActivateSh($envName, $envDir, $binDir, $confDDir));
         if (!$this->isWindows) {
             $this->writeUnixFile($binDir . DIRECTORY_SEPARATOR . 'php', $this->getPhpSh($phpBinary, $envDir, $cliDir, $confDDir));
+            $this->writeUnixFile($binDir . DIRECTORY_SEPARATOR . 'run', $this->getRunSh($envDir, $binDir, $cliDir, $confDDir));
         }
     }
 
@@ -301,6 +304,70 @@ try {
     if (\$oldComposerHome) { \$env:COMPOSER_HOME = \$oldComposerHome } else { Remove-Item Env:COMPOSER_HOME -ErrorAction SilentlyContinue }
     if (\$oldPhprc) { \$env:PHPRC = \$oldPhprc } else { Remove-Item Env:PHPRC -ErrorAction SilentlyContinue }
 }
+PS1;
+    }
+
+    private function getRunBat(string $envDir, string $binDir, string $cliDir, string $confDDir): string
+    {
+        return <<<BAT
+@echo off
+setlocal
+if "%~1"=="" (
+    echo Usage: run ^<command^> [arguments...] 1>&2
+    exit /b 1
+)
+set "VIRTUAL_ENV={$envDir}"
+set "PHP_INI_SCAN_DIR={$confDDir}"
+set "COMPOSER_HOME={$envDir}\composer"
+set "PHPRC={$cliDir}"
+set "PATH={$binDir};%VIRTUAL_ENV%\composer\\vendor\bin;%PATH%"
+call %*
+exit /b %ERRORLEVEL%
+BAT;
+    }
+
+    private function getRunSh(string $envDir, string $binDir, string $cliDir, string $confDDir): string
+    {
+        return <<<SH
+#!/usr/bin/env bash
+if [ "\$#" -eq 0 ]; then echo "Usage: run <command> [arguments...]" >&2; exit 1; fi
+export VIRTUAL_ENV="{$envDir}"
+export PHP_INI_SCAN_DIR="{$confDDir}"
+export COMPOSER_HOME="\$VIRTUAL_ENV/composer"
+export PHPRC="{$cliDir}"
+export PATH="{$binDir}:\$VIRTUAL_ENV/composer/vendor/bin:\$PATH"
+exec "\$@"
+SH;
+    }
+
+    private function getRunPs1(string $envDir, string $binDir, string $cliDir, string $confDDir): string
+    {
+        return <<<PS1
+if (\$args.Length -eq 0) { Write-Error "Usage: run <command> [arguments...]"; exit 1 }
+\$oldVirtualEnv = \$env:VIRTUAL_ENV
+\$oldPhpIniScanDir = \$env:PHP_INI_SCAN_DIR
+\$oldComposerHome = \$env:COMPOSER_HOME
+\$oldPhprc = \$env:PHPRC
+\$oldPath = \$env:PATH
+try {
+    \$env:VIRTUAL_ENV = "{$envDir}"
+    \$env:PHP_INI_SCAN_DIR = "{$confDDir}"
+    \$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
+    \$env:PHPRC = "{$cliDir}"
+    \$env:PATH = "{$binDir};\$env:VIRTUAL_ENV\composer\\vendor\bin;" + \$env:PATH
+    \$command = \$args[0]
+    \$commandArgs = @()
+    if (\$args.Length -gt 1) { \$commandArgs = \$args[1..(\$args.Length - 1)] }
+    & \$command @commandArgs
+    \$commandExitCode = if (\$LASTEXITCODE -ne \$null) { \$LASTEXITCODE } else { 0 }
+} finally {
+    if (\$oldVirtualEnv) { \$env:VIRTUAL_ENV = \$oldVirtualEnv } else { Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue }
+    if (\$oldPhpIniScanDir) { \$env:PHP_INI_SCAN_DIR = \$oldPhpIniScanDir } else { Remove-Item Env:PHP_INI_SCAN_DIR -ErrorAction SilentlyContinue }
+    if (\$oldComposerHome) { \$env:COMPOSER_HOME = \$oldComposerHome } else { Remove-Item Env:COMPOSER_HOME -ErrorAction SilentlyContinue }
+    if (\$oldPhprc) { \$env:PHPRC = \$oldPhprc } else { Remove-Item Env:PHPRC -ErrorAction SilentlyContinue }
+    \$env:PATH = \$oldPath
+}
+exit \$commandExitCode
 PS1;
     }
 }

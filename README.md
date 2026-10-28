@@ -54,6 +54,14 @@ Simply run:
 deactivate
 ```
 
+### Run a command in the environment
+
+Use the generated `run` wrapper to execute any command with the virtual environment configured. Its `bin`/`Scripts` directory and Composer's `vendor/bin` directory are prepended to `PATH` for the command.
+
+```bash
+run phpunit -c tests --filter SOMETHING
+```
+
 ### 4. Multiple PHP Versions
 
 If your system has multiple PHP versions installed, `phpvenv` can create environments tied to a specific PHP interpreter.
