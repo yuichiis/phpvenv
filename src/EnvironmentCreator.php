@@ -158,11 +158,14 @@ set "_OLD_VIRTUAL_PROMPT=%PROMPT%"
 set "_OLD_VIRTUAL_PATH=%PATH%"
 set "_OLD_PHP_INI_SCAN_DIR=%PHP_INI_SCAN_DIR%"
 set "_OLD_COMPOSER_HOME=%COMPOSER_HOME%"
+set "_OLD_PHPVENV_CUSTOM_ENV_LOADED=%PHPVENV_CUSTOM_ENV_LOADED%"
 set "VIRTUAL_ENV={$envDir}"
 set "PATH={$binDir};%VIRTUAL_ENV%\\composer\\vendor\\bin;%PATH%"
 set "PHP_INI_SCAN_DIR={$confDDir}"
 set "PROMPT=({$envName}) %PROMPT%"
 set "COMPOSER_HOME=%VIRTUAL_ENV%\composer"
+if not "%PHPVENV_CUSTOM_ENV_LOADED%"=="{$envDir}" if exist "{$binDir}\\custom-env.bat" call "{$binDir}\\custom-env.bat"
+set "PHPVENV_CUSTOM_ENV_LOADED={$envDir}"
 doskey deactivate={$binDir}\\deactivate.bat
 BAT;
     }
@@ -175,10 +178,12 @@ if defined _OLD_VIRTUAL_PROMPT (set "PROMPT=%_OLD_VIRTUAL_PROMPT%")
 if defined _OLD_VIRTUAL_PATH (set "PATH=%_OLD_VIRTUAL_PATH%")
 if defined _OLD_PHP_INI_SCAN_DIR (set "PHP_INI_SCAN_DIR=%_OLD_PHP_INI_SCAN_DIR%") else (set "PHP_INI_SCAN_DIR=")
 if defined _OLD_COMPOSER_HOME (set "COMPOSER_HOME=%_OLD_COMPOSER_HOME%") else (set "COMPOSER_HOME=")
+if defined _OLD_PHPVENV_CUSTOM_ENV_LOADED (set "PHPVENV_CUSTOM_ENV_LOADED=%_OLD_PHPVENV_CUSTOM_ENV_LOADED%") else (set "PHPVENV_CUSTOM_ENV_LOADED=")
 set _OLD_COMPOSER_HOME=
 set _OLD_VIRTUAL_PROMPT=
 set _OLD_VIRTUAL_PATH=
 set _OLD_PHP_INI_SCAN_DIR=
+set _OLD_PHPVENV_CUSTOM_ENV_LOADED=
 set VIRTUAL_ENV=
 BAT;
     }
@@ -189,12 +194,17 @@ BAT;
 \$env:_OLD_VIRTUAL_PATH = \$env:PATH
 \$env:_OLD_PHP_INI_SCAN_DIR = \$env:PHP_INI_SCAN_DIR
 \$env:_OLD_COMPOSER_HOME = \$env:COMPOSER_HOME
+\$env:_OLD_PHPVENV_CUSTOM_ENV_LOADED = \$env:PHPVENV_CUSTOM_ENV_LOADED
 if (Test-Path function:_OLD_VIRTUAL_PROMPT) { Remove-Item function:_OLD_VIRTUAL_PROMPT -ErrorAction SilentlyContinue }
 Copy-Item function:prompt function:_OLD_VIRTUAL_PROMPT
 \$env:VIRTUAL_ENV = "{$envDir}"
 \$env:PATH = "{$binDir};\$env:VIRTUAL_ENV\\composer\\vendor\\bin;" + \$env:PATH
 \$env:PHP_INI_SCAN_DIR = "{$confDDir}"
 \$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
+if (\$env:PHPVENV_CUSTOM_ENV_LOADED -ne "{$envDir}" -and (Test-Path "{$binDir}\\custom-env.ps1")) {
+    . "{$binDir}\\custom-env.ps1"
+    \$env:PHPVENV_CUSTOM_ENV_LOADED = "{$envDir}"
+}
 function global:prompt { "({$envName}) " + (& _OLD_VIRTUAL_PROMPT) }
 function global:deactivate {
     \$env:PATH = \$env:_OLD_VIRTUAL_PATH
@@ -203,10 +213,13 @@ function global:deactivate {
     if (Test-Path function:_OLD_VIRTUAL_PROMPT) { Copy-Item function:_OLD_VIRTUAL_PROMPT function:prompt; Remove-Item function:_OLD_VIRTUAL_PROMPT -ErrorAction SilentlyContinue }
     if (\$env:_OLD_COMPOSER_HOME) { \$env:COMPOSER_HOME = \$env:_OLD_COMPOSER_HOME }
     else { Remove-Item Env:COMPOSER_HOME -ErrorAction SilentlyContinue }
+    if (\$env:_OLD_PHPVENV_CUSTOM_ENV_LOADED) { \$env:PHPVENV_CUSTOM_ENV_LOADED = \$env:_OLD_PHPVENV_CUSTOM_ENV_LOADED }
+    else { Remove-Item Env:PHPVENV_CUSTOM_ENV_LOADED -ErrorAction SilentlyContinue }
     Remove-Item function:deactivate -ErrorAction SilentlyContinue
     Remove-Item Env:_OLD_COMPOSER_HOME -ErrorAction SilentlyContinue
     Remove-Item Env:_OLD_VIRTUAL_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:_OLD_PHP_INI_SCAN_DIR -ErrorAction SilentlyContinue
+    Remove-Item Env:_OLD_PHPVENV_CUSTOM_ENV_LOADED -ErrorAction SilentlyContinue
     Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue
 }
 PS1;
@@ -219,17 +232,23 @@ PS1;
 export _OLD_VIRTUAL_PATH="\$PATH"
 export _OLD_PHP_INI_SCAN_DIR="\$PHP_INI_SCAN_DIR"
 export _OLD_COMPOSER_HOME="\$COMPOSER_HOME"
+export _OLD_PHPVENV_CUSTOM_ENV_LOADED="\$PHPVENV_CUSTOM_ENV_LOADED"
 if [ -n "\$PS1" ]; then export _OLD_VIRTUAL_PS1="\$PS1"; export PS1="({$envName}) \$PS1"; fi
 export VIRTUAL_ENV="{$envDir}"
 export PATH="{$binDir}:\$VIRTUAL_ENV/composer/vendor/bin:\$PATH"
 export PHP_INI_SCAN_DIR="{$confDDir}"
 export COMPOSER_HOME="\$VIRTUAL_ENV/composer"
+if [ "\$PHPVENV_CUSTOM_ENV_LOADED" != "{$envDir}" ] && [ -f "{$binDir}/custom-env.sh" ]; then
+    source "{$binDir}/custom-env.sh"
+    export PHPVENV_CUSTOM_ENV_LOADED="{$envDir}"
+fi
 deactivate () {
     export PATH="\$_OLD_VIRTUAL_PATH"
     if [ -n "\$_OLD_PHP_INI_SCAN_DIR" ]; then export PHP_INI_SCAN_DIR="\$_OLD_PHP_INI_SCAN_DIR"; else unset PHP_INI_SCAN_DIR; fi
     if [ -n "\$_OLD_VIRTUAL_PS1" ]; then export PS1="\$_OLD_VIRTUAL_PS1"; fi
     if [ -n "\$_OLD_COMPOSER_HOME" ]; then export COMPOSER_HOME="\$_OLD_COMPOSER_HOME"; else unset COMPOSER_HOME; fi
-    unset _OLD_COMPOSER_HOME _OLD_VIRTUAL_PATH _OLD_PHP_INI_SCAN_DIR _OLD_VIRTUAL_PS1 VIRTUAL_ENV
+    if [ -n "\$_OLD_PHPVENV_CUSTOM_ENV_LOADED" ]; then export PHPVENV_CUSTOM_ENV_LOADED="\$_OLD_PHPVENV_CUSTOM_ENV_LOADED"; else unset PHPVENV_CUSTOM_ENV_LOADED; fi
+    unset _OLD_COMPOSER_HOME _OLD_VIRTUAL_PATH _OLD_PHP_INI_SCAN_DIR _OLD_VIRTUAL_PS1 _OLD_PHPVENV_CUSTOM_ENV_LOADED VIRTUAL_ENV
     unset -f deactivate
 }
 SH;
@@ -244,6 +263,8 @@ set "VIRTUAL_ENV={$envDir}"
 set "PHP_INI_SCAN_DIR={$confDDir}"
 set "COMPOSER_HOME={$envDir}\composer"
 set "PHPRC={$cliDir}"
+if not "%PHPVENV_CUSTOM_ENV_LOADED%"=="{$envDir}" if exist "{$envDir}\\Scripts\\custom-env.bat" call "{$envDir}\\Scripts\\custom-env.bat"
+set "PHPVENV_CUSTOM_ENV_LOADED={$envDir}"
 if "%~1"=="--ini" (
     "{$phpBinary}" --ini -c "{$cliDir}" %2 %3 %4 %5 %6 %7 %8 %9
 ) else (
@@ -264,6 +285,10 @@ export VIRTUAL_ENV="{$envDir}"
 export PHP_INI_SCAN_DIR="{$confDDir}"
 export COMPOSER_HOME="\$VIRTUAL_ENV/composer"
 export PHPRC="{$cliDir}"
+if [ "\$PHPVENV_CUSTOM_ENV_LOADED" != "{$envDir}" ] && [ -f "{$envDir}/bin/custom-env.sh" ]; then
+    source "{$envDir}/bin/custom-env.sh"
+    export PHPVENV_CUSTOM_ENV_LOADED="{$envDir}"
+fi
 if [ "\$1" = "--ini" ]; then shift; exec "{$phpBinary}" --ini -c "{$cliDir}" "\$@";
 else
     _phpvenv_is_artisan=0
@@ -284,11 +309,18 @@ SH;
 \$oldPhpIniScanDir   = \$env:PHP_INI_SCAN_DIR
 \$oldComposerHome    = \$env:COMPOSER_HOME
 \$oldPhprc           = \$env:PHPRC
+\$oldCustomEnvLoaded = \$env:PHPVENV_CUSTOM_ENV_LOADED
+\$oldEnvironment = @{}
+Get-ChildItem Env: | ForEach-Object { \$oldEnvironment[\$_.Name] = \$_.Value }
 try {
     \$env:VIRTUAL_ENV = "{$envDir}"
     \$env:PHP_INI_SCAN_DIR = "{$confDDir}"
     \$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
     \$env:PHPRC = "{$cliDir}"
+    if (\$env:PHPVENV_CUSTOM_ENV_LOADED -ne "{$envDir}" -and (Test-Path "{$envDir}\\Scripts\\custom-env.ps1")) {
+        . "{$envDir}\\Scripts\\custom-env.ps1"
+        \$env:PHPVENV_CUSTOM_ENV_LOADED = "{$envDir}"
+    }
     if (\$args.Length -gt 0 -and \$args[0] -eq "--ini") {
         \$rest = @("--ini", "-c", "{$cliDir}")
         if (\$args.Length -gt 1) { \$rest += \$args[1..(\$args.Length - 1)] }
@@ -299,10 +331,13 @@ try {
         & "{$phpBinary}" -c "{$cliDir}" @args
     }
 } finally {
+    Get-ChildItem Env: | Where-Object { -not \$oldEnvironment.ContainsKey(\$_.Name) } | ForEach-Object { Remove-Item ("Env:" + \$_.Name) -ErrorAction SilentlyContinue }
+    foreach (\$name in \$oldEnvironment.Keys) { Set-Item ("Env:" + \$name) \$oldEnvironment[\$name] }
     if (\$oldVirtualEnv) { \$env:VIRTUAL_ENV = \$oldVirtualEnv } else { Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue }
     if (\$oldPhpIniScanDir) { \$env:PHP_INI_SCAN_DIR = \$oldPhpIniScanDir } else { Remove-Item Env:PHP_INI_SCAN_DIR -ErrorAction SilentlyContinue }
     if (\$oldComposerHome) { \$env:COMPOSER_HOME = \$oldComposerHome } else { Remove-Item Env:COMPOSER_HOME -ErrorAction SilentlyContinue }
     if (\$oldPhprc) { \$env:PHPRC = \$oldPhprc } else { Remove-Item Env:PHPRC -ErrorAction SilentlyContinue }
+    if (\$oldCustomEnvLoaded) { \$env:PHPVENV_CUSTOM_ENV_LOADED = \$oldCustomEnvLoaded } else { Remove-Item Env:PHPVENV_CUSTOM_ENV_LOADED -ErrorAction SilentlyContinue }
 }
 PS1;
     }
@@ -321,6 +356,8 @@ set "PHP_INI_SCAN_DIR={$confDDir}"
 set "COMPOSER_HOME={$envDir}\composer"
 set "PHPRC={$cliDir}"
 set "PATH={$binDir};%VIRTUAL_ENV%\composer\\vendor\bin;%PATH%"
+if not "%PHPVENV_CUSTOM_ENV_LOADED%"=="{$envDir}" if exist "{$binDir}\\custom-env.bat" call "{$binDir}\\custom-env.bat"
+set "PHPVENV_CUSTOM_ENV_LOADED={$envDir}"
 call %*
 exit /b %ERRORLEVEL%
 BAT;
@@ -336,6 +373,10 @@ export PHP_INI_SCAN_DIR="{$confDDir}"
 export COMPOSER_HOME="\$VIRTUAL_ENV/composer"
 export PHPRC="{$cliDir}"
 export PATH="{$binDir}:\$VIRTUAL_ENV/composer/vendor/bin:\$PATH"
+if [ "\$PHPVENV_CUSTOM_ENV_LOADED" != "{$envDir}" ] && [ -f "{$binDir}/custom-env.sh" ]; then
+    source "{$binDir}/custom-env.sh"
+    export PHPVENV_CUSTOM_ENV_LOADED="{$envDir}"
+fi
 exec "\$@"
 SH;
     }
@@ -349,23 +390,33 @@ if (\$args.Length -eq 0) { Write-Error "Usage: run <command> [arguments...]"; ex
 \$oldComposerHome = \$env:COMPOSER_HOME
 \$oldPhprc = \$env:PHPRC
 \$oldPath = \$env:PATH
+\$oldCustomEnvLoaded = \$env:PHPVENV_CUSTOM_ENV_LOADED
+\$oldEnvironment = @{}
+Get-ChildItem Env: | ForEach-Object { \$oldEnvironment[\$_.Name] = \$_.Value }
 try {
     \$env:VIRTUAL_ENV = "{$envDir}"
     \$env:PHP_INI_SCAN_DIR = "{$confDDir}"
     \$env:COMPOSER_HOME = "\$env:VIRTUAL_ENV\composer"
     \$env:PHPRC = "{$cliDir}"
     \$env:PATH = "{$binDir};\$env:VIRTUAL_ENV\composer\\vendor\bin;" + \$env:PATH
+    if (\$env:PHPVENV_CUSTOM_ENV_LOADED -ne "{$envDir}" -and (Test-Path "{$binDir}\\custom-env.ps1")) {
+        . "{$binDir}\\custom-env.ps1"
+        \$env:PHPVENV_CUSTOM_ENV_LOADED = "{$envDir}"
+    }
     \$command = \$args[0]
     \$commandArgs = @()
     if (\$args.Length -gt 1) { \$commandArgs = \$args[1..(\$args.Length - 1)] }
     & \$command @commandArgs
     \$commandExitCode = if (\$LASTEXITCODE -ne \$null) { \$LASTEXITCODE } else { 0 }
 } finally {
+    Get-ChildItem Env: | Where-Object { -not \$oldEnvironment.ContainsKey(\$_.Name) } | ForEach-Object { Remove-Item ("Env:" + \$_.Name) -ErrorAction SilentlyContinue }
+    foreach (\$name in \$oldEnvironment.Keys) { Set-Item ("Env:" + \$name) \$oldEnvironment[\$name] }
     if (\$oldVirtualEnv) { \$env:VIRTUAL_ENV = \$oldVirtualEnv } else { Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue }
     if (\$oldPhpIniScanDir) { \$env:PHP_INI_SCAN_DIR = \$oldPhpIniScanDir } else { Remove-Item Env:PHP_INI_SCAN_DIR -ErrorAction SilentlyContinue }
     if (\$oldComposerHome) { \$env:COMPOSER_HOME = \$oldComposerHome } else { Remove-Item Env:COMPOSER_HOME -ErrorAction SilentlyContinue }
     if (\$oldPhprc) { \$env:PHPRC = \$oldPhprc } else { Remove-Item Env:PHPRC -ErrorAction SilentlyContinue }
     \$env:PATH = \$oldPath
+    if (\$oldCustomEnvLoaded) { \$env:PHPVENV_CUSTOM_ENV_LOADED = \$oldCustomEnvLoaded } else { Remove-Item Env:PHPVENV_CUSTOM_ENV_LOADED -ErrorAction SilentlyContinue }
 }
 exit \$commandExitCode
 PS1;

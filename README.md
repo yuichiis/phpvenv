@@ -62,6 +62,27 @@ Use the generated `run` wrapper to execute any command with the virtual environm
 run phpunit -c tests --filter SOMETHING
 ```
 
+### Custom environment variables and PATH
+
+Add a shell-specific file to the environment's `bin` (Unix) or `Scripts` (Windows) directory. The file is loaded by activation, `run`, and the PHP wrapper:
+
+| Shell | File |
+| --- | --- |
+| Bash/Zsh | `bin/custom-env.sh` |
+| Command Prompt | `Scripts/custom-env.bat` |
+| PowerShell | `Scripts/custom-env.ps1` |
+
+For example, `Scripts/custom-env.bat` can contain:
+
+```bat
+set "MY_APP_MODE=development"
+set "PATH=C:\my-tools;%PATH%"
+```
+
+The corresponding PowerShell file uses `$env:MY_APP_MODE = "development"` and `$env:PATH = "C:\my-tools;" + $env:PATH`. Bash/Zsh uses `export MY_APP_MODE=development` and `export PATH="/my-tools:$PATH"`.
+
+The PHP wrapper detects when the current shell already loaded the custom file through activation or `run`, so it does not apply PATH additions twice.
+
 ### 4. Multiple PHP Versions
 
 If your system has multiple PHP versions installed, `phpvenv` can create environments tied to a specific PHP interpreter.
