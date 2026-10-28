@@ -268,7 +268,7 @@ if [ "\$1" = "--ini" ]; then shift; exec "{$phpBinary}" --ini -c "{$cliDir}" "\$
 else
     _phpvenv_is_artisan=0
     if [ -n "\$1" ]; then
-        _phpvenv_base=\$(basename "\$1")
+        _phpvenv_base=\$(basename -- "\$1")
         _phpvenv_base=\${_phpvenv_base%.php}
         if [ "\$_phpvenv_base" = "artisan" ]; then _phpvenv_is_artisan=1; fi
     fi
