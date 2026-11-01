@@ -288,7 +288,8 @@ function Install-PHPVersion {
         $phpIni = Join-Path $installDir "php.ini"
         if (Test-Path $phpIniProd) {
             Copy-Item $phpIniProd $phpIni -Force
-            $extensionDir = Join-Path $installDir "ext"
+            # $extensionDir = Join-Path $installDir "ext"
+            $extensionDir = "ext"
             try {
                 (Get-Content $phpIni) -replace '^extension_dir = "./"', "extension_dir = `"$extensionDir`"" |
                     Set-Content $phpIni -Encoding ASCII
