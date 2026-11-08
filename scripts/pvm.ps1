@@ -430,10 +430,10 @@ Commands:
   help                    Show this help
 
 Options (for install/use):
-  -Arch x64|x86           Architecture (default: x64)
-  -ThreadSafe <true|false> Thread safe build (default: false for nts)
-  -Timezone <zone>        Set timezone in php.ini (default: UTC)
-  -Force                  Force reinstall
+  --arch|-Arch x64|x86          Architecture (default: x64)
+  --ts|-ThreadSafe <true|false> Thread safe build (default: false for nts)
+  --tz|-Timezone <zone>         Set timezone in php.ini (default: UTC)
+  --force|-Force                Force reinstall
 
 Examples:
   .\bin\pvm.ps1 install 8.5
@@ -475,7 +475,7 @@ function Parse-Args {
                 }
                 continue
             }
-            '^(-Timezone|--timezone)$' { if ($i+1 -lt $RemainingArgs.Count) { $i++; $opts.Timezone = $RemainingArgs[$i] }; continue }
+            '^(-Timezone|--tz|--timezone)$' { if ($i+1 -lt $RemainingArgs.Count) { $i++; $opts.Timezone = $RemainingArgs[$i] }; continue }
             '^(-Force|--force)$' { $opts.Force = $true; continue }
             '^(-NoPath|--no-path)$' { $opts.NoPath = $true; continue }
             default {
