@@ -436,11 +436,11 @@ Options (for install/use):
   --force|-Force                Force reinstall
 
 Examples:
-  .\bin\pvm.ps1 install 8.5
-  .\bin\pvm.ps1 install 8.4 -Arch x64 -ThreadSafe false
-  .\bin\pvm.ps1 use 8.5
-  .\bin\pvm.ps1 list
-  .\bin\pvm.ps1 path 8.5
+  pvm install 8.5
+  pvm install 8.4 --arch x64 --ts false
+  pvm use 8.5
+  pvm list
+  pvm path 8.5
 "@
 }
 
