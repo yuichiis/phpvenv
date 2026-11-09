@@ -92,6 +92,7 @@ The generated virtual environment stores the path to the PHP executable used dur
 **Example:**
 
 ```bash
+phpvenv venv
 php8.2 /installed/dir/phpvenv env82
 php8.4 /installed/dir/phpvenv env84
 ```
@@ -114,4 +115,3 @@ Instead, it creates wrapper scripts that forward execution to the PHP binary use
 
 ## License
 [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)
-
